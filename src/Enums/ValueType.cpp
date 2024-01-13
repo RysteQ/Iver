@@ -1,3 +1,6 @@
+#ifndef DEF_ValueType
+#define DEF_ValueType
+
 enum ValueType {
     STRING,
     INTEGER,
@@ -6,3 +9,5 @@ enum ValueType {
 
     NoN
 };
+
+#endif

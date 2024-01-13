@@ -4,4 +4,4 @@ project(iverLang)
 
 set(CMAKE_CXX_STANDARD 20) 
 
-add_executable(iver interpreter.cpp) 
+add_executable(iver src/interpreter.cpp) 

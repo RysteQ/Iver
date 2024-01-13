@@ -1,31 +1,17 @@
-#include <string>
+#include "Lexeme.hpp"
 
-#include "../Enums/TokenType.cpp"
-#include "../Enums/ValueType.cpp"
+Lexeme::Lexeme(TokenType Token, std::string Key, ValueType Type, void* Value, unsigned int Line, unsigned int Column) {
+    token = Token;
+    key = Key;
+    type = Type;
+    value = Value;
+    line = Line;
+    column = Column;
+}
 
-class Lexeme {
-    public:
-        Lexeme(TokenType Token, std::string Key, ValueType Type, void* Value, unsigned int Line, unsigned int Column) {
-            token = Token;
-            key = Key;
-            type = Type;
-            value = Value;
-            line = Line;
-            column = Column;
-        }
-    
-        TokenType Token() { return token; }
-        std::string Key() { return key; }
-        ValueType Type() { return type; }
-        void* Value() { return value; }
-        unsigned int Line() { return line; }
-        unsigned int Column() { return column; }
-
-    private:
-        TokenType token;
-        std::string key;
-        ValueType type;
-        void* value;
-        unsigned int line;
-        unsigned int column;
-};
+TokenType Lexeme::Token() { return token; }
+std::string Lexeme::Key() { return key; }
+ValueType Lexeme::Type() { return type; }
+void* Lexeme::Value() { return value; }
+unsigned int Lexeme::Line() { return line; }
+unsigned int Lexeme::Column() { return column; }
