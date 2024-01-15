@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
-#include <list>
+#include <vector>
 #include "IO/FileHandler.cpp"
 #include "Lexer/Lexer.hpp"
 #include "Models/Lexeme.hpp"
@@ -13,7 +13,10 @@ int main(int argc, char** argv) {
 	}
 
 	std::string file_contents = FileHandler::ReadFile(argv[1]);
-	std::list<Lexeme> lexemes = Lexer::Lex(file_contents);
+	std::cout << file_contents;
+	std::vector<Lexeme> lexemes = Lexer::Lex(file_contents);
+
+	Lexer::PrintTokents(lexemes);
 
 	return EXIT_SUCCESS;
 }

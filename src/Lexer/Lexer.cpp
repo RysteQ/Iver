@@ -1,13 +1,13 @@
 #include "Lexer.hpp"
 
-std::list<Lexeme> Lexer::Lex(std::string input) {
+std::vector<Lexeme> Lexer::Lex(std::string input) {
     Reset();
     
     to_analyze = input;
 
-    while (lexemes.back().Token() != EOP) {
+    while (input[current_byte] != NULL_TERMINATOR) {
         char current_character = input[current_byte];
-        
+
         switch (current_character) {
             case '=': AddLexeme(ASSIGNMENT); break;
             
@@ -147,8 +147,8 @@ std::list<Lexeme> Lexer::Lex(std::string input) {
 
             case '\n': AddLexeme(EOL); break;
             case NULL_TERMINATOR: AddLexeme(EOP); break;
+            case ' ': break;
             
-            // TODO
             default:
                 if ((current_character >= '0' && current_character <= '9') || current_character == '\"') {
                     AddValueLexeme();
@@ -162,13 +162,50 @@ std::list<Lexeme> Lexer::Lex(std::string input) {
         Advance();
     }
 
+    AddLexeme(EOP);
+
     return lexemes;
+}
+
+void Lexer::PrintTokents(std::vector<Lexeme> tokens) {
+    std::string lexeme_token_translations[] = {
+        "ASSIGNMENT",
+
+        "ADD", "SUB", "MUL", "DIV", "MOD", "POW", "INC", "DEC",
+        "SRT_ADD", "SRT_SUB", "SRT_MUL", "SRT_DIV", "SRT_MOD", "SRT_POW",
+        "PARENTHESES_START", "PARENTHESES_END",
+
+        "BIGGER_THAN", "SMALLER_THAN", "BIGGER_OR_EQUAL", "SMALLER_OR_EQUAL",
+        "LOGICAL_EQUAL", "LOGICAL_NOT_EQUAL", "LOGICAL_OR", "LOGICAL_AND",
+        "LOGICAL_NOT",
+
+        "FUNCTION", "IF", "ELSE", "WHILE_LOOP", "FOR_LOOP", "END",
+
+        "VARIABLE", "VALUE",
+
+        "PRINT",
+        "READ",
+
+        "COMMENT", "EOL", "EOP"
+    };
+
+    std::cout << "\n\n" << std::endl;
+    std::cout << "Tokens count: " << tokens.size() << "\n\n";
+
+    for (int i = 0; i < tokens.size(); i++) {
+        std::cout << lexeme_token_translations[tokens[i].Token()] << " ";
+
+        if (tokens[i].Token() == EOL)
+            std::cout << std::endl;
+    }
+
+    std::cout << "\n\n";
 }
 
 void Lexer::Reset() {
     lexemes.clear();
-    line = 0;
-    column = 0;
+    line = 1;
+    column = 1;
     current_byte = 0;
 }
 
@@ -178,7 +215,7 @@ void Lexer::Advance() {
 
     if (to_analyze[current_byte - 1] == '\n') {
         line++;
-        column = 0;
+        column = 1;
     } else {
         column++;
     }
@@ -200,17 +237,17 @@ std::string Lexer::InDepthPeek(unsigned short depth) {
     return to_analyze.substr(current_byte + 1, depth);
 }
 
-void Lexer::AddLexeme(TokenType Token, std::string Key = "", ValueType Type = NoN, void* Value = NULL) {
+void Lexer::AddLexeme(TokenType Token, std::string Key, ValueType Type, void* Value) {
     lexemes.push_back(Lexeme(Token, "", Type, Value, line, column));
 }
 
 void Lexer::AddVariableLexeme() {
     unsigned int start_byte = current_byte;
 
-    while ((to_analyze[current_byte] >= 'a' && to_analyze[current_byte] <= 'z') || (to_analyze[current_byte] >= 'A' && to_analyze[current_byte] <= 'Z'))
+    while ((Peek() >= 'a' && Peek() <= 'z') || (Peek() >= 'A' && Peek() <= 'Z'))
         Advance();
     
-    AddLexeme(VARIABLE, to_analyze.substr(start_byte, current_byte - start_byte));
+    AddLexeme(VARIABLE, to_analyze.substr(start_byte, current_byte - start_byte + 1));
 }
 
 void Lexer::AddValueLexeme() {
@@ -220,28 +257,37 @@ void Lexer::AddValueLexeme() {
     double* float_pointer;
 
     if (to_analyze[current_byte] == '\"') {
-        Advance();
-
-        while (to_analyze[current_byte] != '\"')
+        while (Peek() != '\"' && Peek() != NULL_TERMINATOR)
             Advance();
+        
+        if (Peek() == NULL_TERMINATOR && current_byte != '\"')
+            LexerInternalError("Invalid string, each string must end with a \" character");
 
         if ((current_byte - start_byte) != 0) {
             string_pointer = (std::string*) malloc(current_byte - start_byte);
-            *string_pointer = to_analyze.substr(start_byte, current_byte);
+            *string_pointer = to_analyze.substr(start_byte, current_byte - start_byte);
         }
 
         AddLexeme(VALUE, "", STRING, string_pointer);
+        Advance();
         free(string_pointer);
     } else {
         ValueType value_type = INTEGER;
         std::string number;
 
-        Advance();
-        
-        while ((to_analyze[current_byte] >= '0' && to_analyze[current_byte] <= '9'))
+        while ((Peek() >= '0' && Peek() <= '9') || Peek() == '.') {
+            // if the user enters a number like 17..1 instead of 17.1 this will catch it and inform the user of their mistake
+            if (Peek() == '.') {
+                if (value_type == INTEGER)
+                    value_type = FLOAT;
+                else
+                    LexerInternalError("Error, value cannot be converter to float");
+            }
+                
             Advance();
+        }
 
-        number.append(to_analyze.substr(start_byte, current_byte - start_byte));
+        number.append(to_analyze.substr(start_byte, current_byte - start_byte + 1));
 
         if (value_type == INTEGER) {
             number_pointer = (long*) malloc(sizeof(long));
@@ -265,4 +311,12 @@ bool Lexer::InDepthAdvanceIfLexeme(std::string to_check_against, TokenType Token
     }
 
     return false;
+}
+
+void Lexer::LexerInternalError(std::string error_message) {
+    std::cout << "\n\n-------------" << std::endl;
+    std::cout << error_message << std::endl;
+    std::cout << "Line: " << line << " Column: " << column << std::endl;
+    
+    std::exit(EXIT_FAILURE);
 }
